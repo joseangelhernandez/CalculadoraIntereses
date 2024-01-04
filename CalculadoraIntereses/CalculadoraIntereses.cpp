@@ -22,6 +22,8 @@ double CalcularMontoCuota(double capital, double tasaInteres, int anos) {
     return capital * tasaMensual / (1 - pow(1 + tasaMensual, -meses));
 }
 
+
+
 // Función para formatear números con separadores de miles
 std::string FormatearNumero(double valor) {
     std::stringstream ss;
@@ -30,10 +32,11 @@ std::string FormatearNumero(double valor) {
     return ss.str();
 }
 
+
 // Función para calcular la tasa de interés
 double CalcularTasaInteres(double capital, double cuota, int anos) {
     int meses = anos * 12;
-    double tasaMin = 0, tasaMax = 100, tasaInteres;
+    double tasaMin = 0, tasaMax = 100, tasaInteres = -1; // Inicializar tasaInteres con -1
 
     while ((tasaMax - tasaMin) > 0.0001) {
         tasaInteres = (tasaMin + tasaMax) / 2;
@@ -46,8 +49,17 @@ double CalcularTasaInteres(double capital, double cuota, int anos) {
             tasaMin = tasaInteres;
         }
     }
+
+    // Verificar si la tasa de interés es válida
+    if (tasaInteres == -1 || std::isnan(tasaInteres) || std::isinf(tasaInteres)) {
+        // Si la tasa de interés no es válida, imprimir un mensaje y devolver un valor especial
+        std::cout << "La proporción entre los valores proporcionados no permite obtener una tasa de interés válida." << std::endl;
+        return -1; // Devolver -1 o cualquier otro valor que signifique "no válido"
+    }
+
     return tasaInteres;
 }
+
 
 // Función GenerarTablaAmortizacion
 void GenerarTablaAmortizacion(double capital, double tasaInteres, int anos, double cuota) {
@@ -68,6 +80,22 @@ void GenerarTablaAmortizacion(double capital, double tasaInteres, int anos, doub
             FormatearNumero(intereses).c_str(),
             FormatearNumero(saldo).c_str());
     }
+}
+
+double calculoIntereses(double capital, double tasaInteres, int anos, double cuota) {
+    double totalIntereses = 0;
+    double saldo = capital, abonoCapital, intereses, tasaMensual = tasaInteres / 12 / 100;
+
+    for (int i = 1; i <= anos * 12; ++i) {
+        intereses = saldo * tasaMensual;
+        abonoCapital = cuota - intereses;
+        saldo -= abonoCapital;
+        if (saldo < 0) saldo = 0;
+
+        totalIntereses += intereses;
+    }
+
+    return totalIntereses;
 }
 
 // Función para validar y obtener un número entero
@@ -96,16 +124,20 @@ double ObtenerDecimal(const std::string& mensaje, double minimo, double maximo) 
 
 // Función para mostrar el menú y pedir datos al usuario
 void MostrarMenu() {
-    int opcion, anos;
-    double capital, tasaInteres, cuota;
+    bool inicial = false;
+    int opcion, anos, inicialOpcion, porcientoInicial;
+    double capital, tasaInteres, cuota, totalIntereses, calculoInicial, restanteCapital;
+    std::string input;
     std::string cuotaFormateada;
+    std::string totalInteresesxPagar;
+    std::string montoInicial;
+    std::string porcientoInicialFormato;
 
     while (true) { // Bucle infinito para mostrar el menú
         std::cout << "1. Calcular Monto de Cuotas de un Préstamo\n";
         std::cout << "2. Calcular Tasa de Interés\n";
         std::cout << "3. Salir\n";
-        std::cout << "Elige una opción: ";
-        std::cin >> opcion;
+        opcion = ObtenerEntero("Elige una opción: ", 1, 3);
 
         if (opcion == 3) break; // Salir del menú
 
@@ -114,10 +146,48 @@ void MostrarMenu() {
             capital = ObtenerDecimal("\nIngrese el monto del préstamo (mayor a 1,000.00): ", 1000, std::numeric_limits<double>::max());
             tasaInteres = ObtenerDecimal("Ingrese el interés (% anual) (mayor a 1.00): ", 1, 50);
             anos = ObtenerEntero("Ingrese el tiempo (años) (mayor a 1): ", 1, 20);
+            totalIntereses = 0;
+            restanteCapital = 0;
+            calculoInicial = 0;
+
+            std::cout << "\n¿Contempla un pago inicial?\n";
+            std::cout << "1. Sí\n";
+            std::cout << "Otro. No\n";
+            std::cout << "Elige una opción: ";
+            std::cin >> inicialOpcion;
+
+            switch (inicialOpcion) {
+            case 1:
+                inicial = true;
+                porcientoInicial = ObtenerEntero("\nIngrese el porcentaje del inicial: ", 1, 99);
+
+                calculoInicial = capital * (static_cast<double>(porcientoInicial) / 100.0);
+                montoInicial = FormatearNumero(calculoInicial);
+                porcientoInicialFormato = FormatearNumero(porcientoInicial);
+
+                capital -= calculoInicial;
+
+                printf("\nPorcentaje de inicial: %s%%\n", porcientoInicialFormato.c_str());
+                printf("\nMonto de inicial a pagar: %s\n", montoInicial.c_str());
+
+            default:
+                totalIntereses = 0;
+                restanteCapital = 0;
+                calculoInicial = 0;
+
+                inicial = false;
+            }
 
             cuota = CalcularMontoCuota(capital, tasaInteres, anos);
             cuotaFormateada = FormatearNumero(cuota);
+
+            totalIntereses = calculoIntereses(capital, tasaInteres, anos, cuota);
+
+            totalInteresesxPagar = FormatearNumero(totalIntereses);
             printf("\nMonto de la cuota mensual: %s\n", cuotaFormateada.c_str());
+            printf("\nMonto total de Intereses a Pagar: %s\n", totalInteresesxPagar.c_str());
+
+
 
             opcion = ObtenerEntero("\n¿Desea ver la tabla de amortización? (1 para sí, 2 para no): ", 1, 2);
             if (opcion == 1) {
@@ -128,18 +198,23 @@ void MostrarMenu() {
                 std::cin.get(); // Espera a que el usuario presione Enter
             }
             break;
+
         case 2:
             capital = ObtenerDecimal("\nIngrese el monto del préstamo: ", 1000, std::numeric_limits<double>::max());
             cuota = ObtenerDecimal("Ingrese el monto de la cuota: ", 1, std::numeric_limits<double>::max());
             anos = ObtenerEntero("Ingrese el tiempo (años): ", 1, 20);
 
             tasaInteres = CalcularTasaInteres(capital, cuota, anos);
-            printf("Tasa de interés: %.2f%%\n", tasaInteres); // Añade '%%' para imprimir el signo de porcentaje
+            // Si la tasa de interés es válida, mostrarla
+            if (tasaInteres != -1) {
+                std::cout << "Tasa de interés: " << std::fixed << std::setprecision(2) << tasaInteres << "%" << std::endl;
+            }
 
             std::cout << "\nPresione Enter para continuar...\n";
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Ignora el resto de la línea
             std::cin.get(); // Espera a que el usuario presione Enter
             break;
+
         default:
             std::cout << "Opción no válida. Intente de nuevo." << std::endl;
         }
