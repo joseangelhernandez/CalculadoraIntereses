@@ -1,6 +1,19 @@
 // CalculadoraIntereses.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+/*
+    Propósito del programa: Realizar un programa C++ que calcule las cuotas a pagar de un prestamo y del interes.
+
+    Grupo: Loida Prenza - ID: 1114929,
+            José Hernandez - ID: 1117038
+            Merarys Nuñez - ID: 1116733,
+            Manuel Tejeda - ID: 1116661,
+            Elahine Molina - ID: 1100373,
+            Yeikol Lorenzo - ID: 1116873
+
+    Fecha: 04/01/2024
+ */
+
 #include <iostream>
 #include <cmath>
 #include <locale>
