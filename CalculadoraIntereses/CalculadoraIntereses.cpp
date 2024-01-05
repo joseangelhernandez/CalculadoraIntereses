@@ -48,8 +48,20 @@ std::string FormatearNumero(double valor) {
 
 // Función para calcular la tasa de interés
 double CalcularTasaInteres(double capital, double cuota, int anos) {
+    std::string MontoFormateado;
+    std::string CuotasFormateada;
     int meses = anos * 12;
-    double tasaMin = 0, tasaMax = 100, tasaInteres = -1; // Inicializar tasaInteres con -1
+
+    // Verificar si la cuota total es suficiente para cubrir el capital
+    if (cuota * meses < capital) {
+        MontoFormateado = FormatearNumero(capital);
+        CuotasFormateada = FormatearNumero(cuota * meses);
+        std::cout << "Los datos proporcionados no permiten calcular una tasa de interés válida." << std::endl;
+        std::cout << "El total de cuotas (" << CuotasFormateada.c_str() << ") es menor que el capital del préstamo (" << MontoFormateado.c_str() << ")." << std::endl;
+        return -1; // Indica que no es posible calcular la tasa de interés
+    }
+
+    double tasaMin = 0, tasaMax = 100, tasaInteres = -1;
 
     while ((tasaMax - tasaMin) > 0.0001) {
         tasaInteres = (tasaMin + tasaMax) / 2;
@@ -61,13 +73,6 @@ double CalcularTasaInteres(double capital, double cuota, int anos) {
         else {
             tasaMin = tasaInteres;
         }
-    }
-
-    // Verificar si la tasa de interés es válida
-    if (tasaInteres == -1 || std::isnan(tasaInteres) || std::isinf(tasaInteres)) {
-        // Si la tasa de interés no es válida, imprimir un mensaje y devolver un valor especial
-        std::cout << "La proporción entre los valores proporcionados no permite obtener una tasa de interés válida." << std::endl;
-        return -1; // Devolver -1 o cualquier otro valor que signifique "no válido"
     }
 
     return tasaInteres;
